@@ -17,7 +17,7 @@ g2<-0.6
 n=length(y)
 w=kmw(y,delta)
 w=w/sum(w)*n
-
+W=diag(w)
 
 #normalize
 ymean=sum(w*y)/sum(w)
@@ -30,31 +30,26 @@ Z=Z-matrix(1,n,1)%*%zmean
 X=scale(X)
 Z=scale(Z)
 
+#result=cbind(selected_genes_name,p_value,p_adjust,beta_for_gene,theta_for_image)
 gene=ld.test(X,Z,y,lambda1,lambda2,g1,g2,w)
 
 ##survival analysis
 
-idbb=dim(gene)[1]
+idbb=seq(1:dim(gene)[1])
 fit.KM=survfit(my.surv~1)
 
 #plot(fit.KM)
 
-for (ll in idbb){
-  
-  fit=glm(y~X[,ll]-1,weights = sqrt(w))
-  
-  
-  beta=fit$coefficients
-  
-  beta_set[ll]<-beta
-}
-beta=beta_set[idbb]
 
 yg=matrix(0,n,length(idbb))
 for (i in 1:length(idbb)) {
   yg[,i]= Z%*%as.numeric(gene[i,5:dim(gene)[2]])
+  
 }
-log_rank_pg <- apply(yg, 2, function(values1){
+a<-apply(yg, 2, var)
+b<-which(a!=0)
+
+log_rank_pg <- apply(yg[,b], 2, function(values1){
   group=ifelse(values1>median(values1),'low','high')
   kmfit2 <- survfit(my.surv~group)
   #plot(kmfit2)
@@ -66,7 +61,7 @@ y1=matrix(0,n,length(idbb))
 for (i in 1:length(idbb)) {
   y1[,i]= X[,gene[i,1]]*as.numeric(gene[i,4])+Z%*%as.numeric(gene[i,5:dim(gene)[2]])
 }
-log_rank_p <- apply(y1, 2, function(values1){
+log_rank_p <- apply(y1[,b], 2, function(values1){
   group=ifelse(values1>=median(values1),'low','high')
   kmfit2 <- survfit(my.surv~group)
   #plot(kmfit2)
